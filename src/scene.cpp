@@ -2,6 +2,7 @@
 #include "Scene.h"
 #include "QuadModel.h"
 #include "OBJModel.h"
+#include "cube.h"
 
 Scene::Scene(
 	ID3D11Device* dxdevice,
@@ -50,6 +51,7 @@ void OurTestScene::Init()
 	// Create objects
 	m_quad = new QuadModel(m_dxdevice, m_dxdevice_context);
 	m_sponza = new OBJModel("assets/crytek-sponza/sponza.obj", m_dxdevice, m_dxdevice_context);
+	m_cube = new cube(m_dxdevice, m_dxdevice_context);
 }
 
 //
@@ -60,6 +62,12 @@ void OurTestScene::Update(
 	float dt,
 	const InputHandler& input_handler)
 {
+	long mouse_dx = input_handler.GetMouseDeltaY();
+	long mouse_dy = input_handler.GetMouseDeltaX();
+
+	if (mouse_dx != 0 || mouse_dy != 0) {
+		m_camera->Rotate(static_cast<float>(mouse_dx), static_cast<float>(mouse_dy));
+	}
 	// Basic camera control
 	if (input_handler.IsKeyPressed(Keys::Up) || input_handler.IsKeyPressed(Keys::W))
 		m_camera->Move({ 0.0f, 0.0f, -m_camera_velocity * dt });
@@ -120,6 +128,8 @@ void OurTestScene::Render()
 	// Load matrices + the Quad's transformation to the device and render it
 	UpdateTransformationBuffer(m_quad_transform, m_view_matrix, m_projection_matrix);
 	m_quad->Render();
+
+	m_cube->Render();
 
 	// Load matrices + Sponza's transformation to the device and render it
 	UpdateTransformationBuffer(m_sponza_transform, m_view_matrix, m_projection_matrix);
