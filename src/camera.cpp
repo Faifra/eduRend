@@ -17,8 +17,8 @@ void Camera::Move(const vec3f& direction) noexcept
 void Camera::Rotate(float dx, float dy) noexcept
 {
     // Apply sensitivity and accumulate rotation
-    m_yaw += dx * m_sensitivity;
-    m_pitch += dy * m_sensitivity;
+    m_yaw -= dx * m_sensitivity;
+    m_pitch -= dy * m_sensitivity;
 
     // Clamp pitch to prevent camera from flipping over
     const float maxPitch = 3.14159265f / 2.0f - 0.01f; // Just under 90 degrees

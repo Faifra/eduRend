@@ -62,8 +62,8 @@ void OurTestScene::Update(
 	float dt,
 	const InputHandler& input_handler)
 {
-	long mouse_dx = input_handler.GetMouseDeltaY();
-	long mouse_dy = input_handler.GetMouseDeltaX();
+	long mouse_dx = input_handler.GetMouseDeltaX();
+	long mouse_dy = input_handler.GetMouseDeltaY();
 
 	if (mouse_dx != 0 || mouse_dy != 0) {
 		m_camera->Rotate(static_cast<float>(mouse_dx), static_cast<float>(mouse_dy));
