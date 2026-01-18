@@ -65,32 +65,8 @@ void OurTestScene::Update(
     float dt,
     const InputHandler& input_handler)
 {
-    long mouse_dx = input_handler.GetMouseDeltaX();
-    long mouse_dy = input_handler.GetMouseDeltaY();
 
-    if (mouse_dx != 0 || mouse_dy != 0) {
-        m_camera->Rotate((float)mouse_dx, (float)mouse_dy);
-    }
-
-    // Basic camera control
-    if (input_handler.IsKeyPressed(Keys::Up) || input_handler.IsKeyPressed(Keys::W))
-        m_camera->Move({ 0.0f, 0.0f, -m_camera_velocity * dt });
-    if (input_handler.IsKeyPressed(Keys::Down) || input_handler.IsKeyPressed(Keys::S))
-        m_camera->Move({ 0.0f, 0.0f, m_camera_velocity * dt });
-    if (input_handler.IsKeyPressed(Keys::Right) || input_handler.IsKeyPressed(Keys::D))
-        m_camera->Move({ m_camera_velocity * dt, 0.0f, 0.0f });
-    if (input_handler.IsKeyPressed(Keys::Left) || input_handler.IsKeyPressed(Keys::A))
-        m_camera->Move({ -m_camera_velocity * dt, 0.0f, 0.0f });
-    if (input_handler.IsKeyPressed(Keys::Space))
-        m_camera->Move({ 0.0f, m_camera_velocity * dt, 0.0f });
-    if (input_handler.IsKeyPressed(Keys::LCtrl))
-        m_camera->Move({ 0.0f, -m_camera_velocity * dt, 0.0f });
-    if (input_handler.IsKeyPressed(Keys::Esc))
-        PostQuitMessage(0);
-
-    //
-    // Original transforms (KEEP THESE)
-    //
+    m_camera->Update(dt, input_handler);
 
     // Quad model-to-world transformation
     m_quad_transform = mat4f::translation(0, 0, 0) *
