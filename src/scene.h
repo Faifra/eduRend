@@ -76,7 +76,8 @@ class OurTestScene : public Scene
     //
     ID3D11Buffer* m_transformation_buffer = nullptr;
     // + other CBuffers
-
+    ID3D11Buffer* m_material_buffer = nullptr;
+    ID3D11Buffer* m_light_buffer = nullptr;
     //
     // Scene content
     //
@@ -117,9 +118,34 @@ class OurTestScene : public Scene
     float v_orbit_radius = 2.5f;
 
     void InitTransformationBuffer();
+
     void UpdateTransformationBuffer(mat4f model_to_world_matrix,
         mat4f world_to_view_matrix,
         mat4f projection_matrix);
+
+    void InitLightCameraBuffer();
+
+    void UpdateLightCameraBuffer(float3 light_pos, float3 camera_pos);
+
+    void InitMaterialBuffer();
+
+    void UpdateMaterialBuffer(float3 AmbientColor, float3 DiffuseColor, float3 SpecularColor, float Shininess);
+
+
+    // Added for phong setup
+    struct LightCameraBuffer
+    {
+        float4 light_pos;
+        float4 camera_pos;
+    };
+
+    struct MaterialBuffer
+    {
+        float4 AmbientColor;
+        float4 DiffuseColor;
+        float4 SpecularColor;
+        float4 Shininess;
+    };
 
 public:
     OurTestScene(ID3D11Device* dxdevice,

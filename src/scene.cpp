@@ -31,7 +31,9 @@ OurTestScene::OurTestScene(
     Scene(dxdevice, dxdevice_context, window_width, window_height)
 {
     InitTransformationBuffer();
-    // + init other CBuffers
+    InitLightCameraBuffer();
+    InitMaterialBuffer();
+
 }
 
 //
@@ -91,9 +93,9 @@ void OurTestScene::Update(
 
     // Sun stays at center but rotates
     m_cube_transform =
-        mat4f::scaling(1.5f) *
+        mat4f::translation(0, 0, 0) *
         mat4f::rotation(m_cube_rotation_angle, 0.0f, 1.0f, 0.0f) *
-        mat4f::translation(0, 0, 0);
+        mat4f::scaling(2.0f);
 
     // Earth orbit around Sun
     float n_orbitX = n_orbit_radius * cos(n_cube_orbit_angle);
@@ -137,6 +139,28 @@ void OurTestScene::Render()
     m_view_matrix = m_camera->WorldToViewMatrix();
     m_projection_matrix = m_camera->ProjectionMatrix();
 
+    // Extract camera position
+    float3 cam_pos;
+    cam_pos.x = -m_view_matrix.col[3].x;
+    cam_pos.y = -m_view_matrix.col[3].y;
+    cam_pos.z = -m_view_matrix.col[3].z;
+
+    // Simple light
+    float t = m_angle;
+    float3 light_pos = float3(5.0f * cos(t), 3.0f, 5.0f * sin(t));
+
+    // Update and bind light buffer (PS b0)
+    UpdateLightCameraBuffer(light_pos, cam_pos);
+    m_dxdevice_context->PSSetConstantBuffers(0, 1, &m_light_buffer);
+
+    UpdateMaterialBuffer(
+        float3(0.2f, 0.2f, 0.2f),   // ambient
+        float3(1.0f, 1.0f, 1.0f),   // diffuse
+        float3(1.0f, 1.0f, 1.0f),   // specular
+        32.0f);                     // shininess
+
+    m_dxdevice_context->PSSetConstantBuffers(1, 1, &m_material_buffer);
+
     //
     // Render Quad
     //
@@ -149,9 +173,16 @@ void OurTestScene::Render()
     UpdateTransformationBuffer(m_sponza_transform, m_view_matrix, m_projection_matrix);
     m_sponza->Render();
 
-    //
-    // Render Sun
-    //
+    // Render blue sun
+    UpdateMaterialBuffer(
+        float3(0.0f, 0.0f, 0.2f),   // Ambient (dark blue)
+        float3(0.0f, 0.0f, 1.0f),   // Diffuse (blue)
+        float3(1.0f, 1.0f, 1.0f),   // Specular (white)
+        32.0f                       // Shininess
+    );
+
+    m_dxdevice_context->PSSetConstantBuffers(1, 1, &m_material_buffer);
+
     UpdateTransformationBuffer(m_cube_transform, m_view_matrix, m_projection_matrix);
     m_cube->Render();
 
@@ -181,7 +212,8 @@ void OurTestScene::Release()
     SAFE_DELETE(v_cube);
 
     SAFE_RELEASE(m_transformation_buffer);
-    // + release other CBuffers
+    SAFE_RELEASE(m_light_buffer);
+    SAFE_RELEASE(m_material_buffer);
 }
 
 void OurTestScene::OnWindowResized(
@@ -220,4 +252,56 @@ void OurTestScene::UpdateTransformationBuffer(
     matrixBuffer->WorldToViewMatrix = WorldToViewMatrix;
     matrixBuffer->ProjectionMatrix = ProjectionMatrix;
     m_dxdevice_context->Unmap(m_transformation_buffer, 0);
+}
+
+void OurTestScene::InitLightCameraBuffer()
+{
+    D3D11_BUFFER_DESC desc = {};
+    desc.Usage = D3D11_USAGE_DYNAMIC;
+    desc.ByteWidth = sizeof(LightCameraBuffer);
+    desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+    m_dxdevice->CreateBuffer(&desc, nullptr, &m_light_buffer);
+}
+
+void OurTestScene::UpdateLightCameraBuffer(float3 light_pos, float3 camera_pos)
+{
+    D3D11_MAPPED_SUBRESOURCE mapped;
+    m_dxdevice_context->Map(m_light_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+
+    LightCameraBuffer* data = (LightCameraBuffer*)mapped.pData;
+    data->light_pos = float4(light_pos, 1.0f);
+    data->camera_pos = float4(camera_pos, 1.0f);
+
+    m_dxdevice_context->Unmap(m_light_buffer, 0);
+}
+
+void OurTestScene::InitMaterialBuffer()
+{
+    D3D11_BUFFER_DESC desc = {};
+    desc.Usage = D3D11_USAGE_DYNAMIC;
+    desc.ByteWidth = sizeof(MaterialBuffer);
+    desc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+    desc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+
+    m_dxdevice->CreateBuffer(&desc, nullptr, &m_material_buffer);
+}
+
+void OurTestScene::UpdateMaterialBuffer(
+    float3 AmbientColor,
+    float3 DiffuseColor,
+    float3 SpecularColor,
+    float Shininess)
+{
+    D3D11_MAPPED_SUBRESOURCE mapped;
+    m_dxdevice_context->Map(m_material_buffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &mapped);
+
+    MaterialBuffer* data = (MaterialBuffer*)mapped.pData;
+    data->AmbientColor = float4(AmbientColor, 1.0f);
+    data->DiffuseColor = float4(DiffuseColor, 1.0f);
+    data->SpecularColor = float4(SpecularColor, 1.0f);
+    data->Shininess = float4(Shininess, 0, 0, 0);
+
+    m_dxdevice_context->Unmap(m_material_buffer, 0);
 }
