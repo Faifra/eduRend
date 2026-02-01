@@ -58,6 +58,28 @@ void OurTestScene::Init()
     m_cube = new cube(m_dxdevice, m_dxdevice_context); // Sun
     n_cube = new cube(m_dxdevice, m_dxdevice_context); // Earth
     v_cube = new cube(m_dxdevice, m_dxdevice_context); // Moon
+
+    // Sampler states setup
+    D3D11_SAMPLER_DESC sampDesc = {};
+    sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+    sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+    sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+    sampDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+    sampDesc.MinLOD = 0;
+    sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+    // POINT
+    sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+    m_dxdevice->CreateSamplerState(&sampDesc, &m_samplerPoint);
+
+    // LINEAR
+    sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+    m_dxdevice->CreateSamplerState(&sampDesc, &m_samplerLinear);
+
+    // ANISOTROPIC
+    sampDesc.Filter = D3D11_FILTER_ANISOTROPIC;
+    sampDesc.MaxAnisotropy = 16;
+    m_dxdevice->CreateSamplerState(&sampDesc, &m_samplerAniso);
 }
 
 //
@@ -69,6 +91,15 @@ void OurTestScene::Update(
 {
 
     m_camera->Update(dt, input_handler);
+
+    if (input_handler.IsKeyPressed(Keys::Key1))
+        m_currentSampler = 1;
+
+    if (input_handler.IsKeyPressed(Keys::Key2))
+        m_currentSampler = 2;
+
+    if (input_handler.IsKeyPressed(Keys::Key3))
+        m_currentSampler = 3;
 
     // Quad model-to-world transformation
     m_quad_transform = mat4f::translation(0, 0, 0) *
@@ -112,7 +143,7 @@ void OurTestScene::Update(
 
     v_cube_transform =
         mat4f::scaling(0.4f) *
-        mat4f::rotation(v_cube_rotation_angle, 0.0f, 1.0f, 0.0f) *
+        mat4f::rotation(v_cube_rotation_angle, 1.0f, 0.0f, 0.0f) *
         mat4f::translation(v_orbitX, 0, v_orbitZ);
 
     // Increment the rotation angle.
@@ -153,6 +184,18 @@ void OurTestScene::Render()
     UpdateLightCameraBuffer(light_pos, cam_pos);
     m_dxdevice_context->PSSetConstantBuffers(0, 1, &m_light_buffer);
 
+    // Select sampler based on m_currentSampler
+    ID3D11SamplerState* sampler = nullptr;
+    if (m_currentSampler == 1)
+        sampler = m_samplerPoint;
+    else if (m_currentSampler == 2)
+        sampler = m_samplerLinear;
+    else if (m_currentSampler == 3)
+        sampler = m_samplerAniso;
+
+    // Bind sampler
+    m_dxdevice_context->PSSetSamplers(0, 1, &sampler);
+
     UpdateMaterialBuffer(
         float3(0.2f, 0.2f, 0.2f),   // ambient
         float3(1.0f, 1.0f, 1.0f),   // diffuse
@@ -177,8 +220,8 @@ void OurTestScene::Render()
     UpdateMaterialBuffer(
         float3(0.0f, 0.0f, 0.2f),   // Ambient (dark blue)
         float3(0.0f, 0.0f, 1.0f),   // Diffuse (blue)
-        float3(1.0f, 1.0f, 1.0f),   // Specular (white)
-        32.0f                       // Shininess
+        float3(0.4f, 0.4f, 0.4f),   // Specular (white)
+        16.0f                       // Shininess
     );
 
     m_dxdevice_context->PSSetConstantBuffers(1, 1, &m_material_buffer);
@@ -200,7 +243,6 @@ void OurTestScene::Render()
     UpdateTransformationBuffer(v_cube_world_transform, m_view_matrix, m_projection_matrix);
     v_cube->Render();
 }
-
 void OurTestScene::Release()
 {
     SAFE_DELETE(m_quad);
@@ -214,6 +256,12 @@ void OurTestScene::Release()
     SAFE_RELEASE(m_transformation_buffer);
     SAFE_RELEASE(m_light_buffer);
     SAFE_RELEASE(m_material_buffer);
+
+
+    // release samplers
+    SAFE_RELEASE(m_samplerPoint);
+    SAFE_RELEASE(m_samplerLinear);
+    SAFE_RELEASE(m_samplerAniso);
 }
 
 void OurTestScene::OnWindowResized(

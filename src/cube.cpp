@@ -1,8 +1,10 @@
 #include "cube.h"
+
 cube::cube(
     ID3D11Device* dxdevice,
     ID3D11DeviceContext* dxdevice_context)
-    : Model(dxdevice, dxdevice_context) {
+    : Model(dxdevice, dxdevice_context)
+{
     std::vector<Vertex> vertices;
     std::vector<unsigned> indices;
 
@@ -73,62 +75,50 @@ cube::cube(
     vertices.push_back(v22);
     vertices.push_back(v23);
 
-    //triangle 1
     indices.push_back(0);
     indices.push_back(1);
     indices.push_back(3);
 
-    //triangle 2
     indices.push_back(1);
     indices.push_back(2);
     indices.push_back(3);
 
-    //triangle 3
     indices.push_back(4);
     indices.push_back(5);
     indices.push_back(7);
 
-    //triangle 4
     indices.push_back(5);
     indices.push_back(6);
     indices.push_back(7);
 
-    //triangle 5
     indices.push_back(8);
     indices.push_back(9);
     indices.push_back(11);
 
-    //triangle 6
     indices.push_back(9);
     indices.push_back(10);
     indices.push_back(11);
 
-    //triangle 7
     indices.push_back(12);
     indices.push_back(13);
     indices.push_back(15);
 
-    //triangle 8
     indices.push_back(13);
     indices.push_back(14);
     indices.push_back(15);
 
-    //triangle 9
     indices.push_back(16);
     indices.push_back(17);
     indices.push_back(19);
 
-    //triangle 10
     indices.push_back(17);
     indices.push_back(18);
     indices.push_back(19);
 
-    //triangle 11
     indices.push_back(20);
     indices.push_back(21);
     indices.push_back(23);
 
-    //triangle 12
     indices.push_back(21);
     indices.push_back(22);
     indices.push_back(23);
@@ -147,7 +137,7 @@ cube::cube(
     dxdevice->CreateBuffer(&vertexbufferDesc, &vertexData, &m_vertex_buffer);
     SETNAME(m_vertex_buffer, "VertexBuffer");
 
-    //  Index array descriptor
+    // Index array descriptor
     D3D11_BUFFER_DESC indexbufferDesc = { 0 };
     indexbufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
     indexbufferDesc.CPUAccessFlags = 0;
@@ -163,18 +153,33 @@ cube::cube(
 
     m_number_of_indices = (unsigned int)indices.size();
 
-    }
+    // Load Diffuse texture
+    //
+    HRESULT hr = LoadTextureFromFile(
+        dxdevice,
+        "assets/textures/yroadcrossing.png",
+        &m_diffuseTexture);
+}
 
-    void cube::Render() const {
+void cube::Render() const
+{
+    // Bind vertex buffer
+    const UINT32 stride = sizeof(Vertex);
+    const UINT32 offset = 0;
+    m_dxdevice_context->IASetVertexBuffers(0, 1, &m_vertex_buffer, &stride, &offset);
 
-        // Bind our vertex buffer
-        const UINT32 stride = sizeof(Vertex); //  sizeof(float) * 8;
-        const UINT32 offset = 0;
-        m_dxdevice_context->IASetVertexBuffers(0, 1, &m_vertex_buffer, &stride, &offset);
+    // Bind index buffer
+    m_dxdevice_context->IASetIndexBuffer(m_index_buffer, DXGI_FORMAT_R32_UINT, 0);
 
-        // Bind our index buffer
-        m_dxdevice_context->IASetIndexBuffer(m_index_buffer, DXGI_FORMAT_R32_UINT, 0);
+    // Bind diffuse texture to slot t0 of the PS
+    m_dxdevice_context->PSSetShaderResources(0, 1, &m_diffuseTexture.TextureView);
 
-        // Make the drawcall
-        m_dxdevice_context->DrawIndexed(m_number_of_indices, 0, 0);
+
+    // Make the drawcall
+    m_dxdevice_context->DrawIndexed(m_number_of_indices, 0, 0);
+}
+
+cube::~cube()
+{
+    SAFE_RELEASE(m_diffuseTexture.TextureView);
 }

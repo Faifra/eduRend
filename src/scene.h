@@ -153,6 +153,12 @@ public:
         int window_width,
         int window_height);
 
+  
+    ID3D11SamplerState* m_samplerPoint = nullptr;
+    ID3D11SamplerState* m_samplerLinear = nullptr;
+    ID3D11SamplerState* m_samplerAniso = nullptr;
+    int m_currentSampler = 1; // 1 = point, 2 = linear, 3 = aniso
+
     void Init() override;
     void Update(float dt, const InputHandler& input_handler) override;
     void Render() override;
