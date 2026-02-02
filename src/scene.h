@@ -157,7 +157,9 @@ public:
     ID3D11SamplerState* m_samplerPoint = nullptr;
     ID3D11SamplerState* m_samplerLinear = nullptr;
     ID3D11SamplerState* m_samplerAniso = nullptr;
-    int m_currentSampler = 1; // 1 = point, 2 = linear, 3 = aniso
+    int m_currentFilter = 1; // 1 = point, 2 = linear, 3 = aniso
+    int m_currentAddressMode = 4;  // 4 = wrap, 5 = mirror, 6 = clamp
+
 
     void Init() override;
     void Update(float dt, const InputHandler& input_handler) override;

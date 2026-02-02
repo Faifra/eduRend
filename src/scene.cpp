@@ -80,6 +80,23 @@ void OurTestScene::Init()
     sampDesc.Filter = D3D11_FILTER_ANISOTROPIC;
     sampDesc.MaxAnisotropy = 16;
     m_dxdevice->CreateSamplerState(&sampDesc, &m_samplerAniso);
+
+    // Set address mode based on m_currentAddressMode
+    if (m_currentAddressMode == 4) {
+        sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+        sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+        sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+    }
+    else if (m_currentAddressMode == 5) {
+        sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_MIRROR;
+        sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_MIRROR;
+        sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_MIRROR;
+    }
+    else if (m_currentAddressMode == 6) {
+        sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+        sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+        sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+    }
 }
 
 //
@@ -93,14 +110,69 @@ void OurTestScene::Update(
     m_camera->Update(dt, input_handler);
 
     if (input_handler.IsKeyPressed(Keys::Key1))
-        m_currentSampler = 1;
+        m_currentFilter = 1;
 
     if (input_handler.IsKeyPressed(Keys::Key2))
-        m_currentSampler = 2;
+        m_currentFilter = 2;
 
     if (input_handler.IsKeyPressed(Keys::Key3))
-        m_currentSampler = 3;
+        m_currentFilter = 3;
+    if (input_handler.IsKeyPressed(Keys::Key4))
+        m_currentAddressMode = 4;
 
+    if (input_handler.IsKeyPressed(Keys::Key5))
+        m_currentAddressMode = 5;
+
+    if (input_handler.IsKeyPressed(Keys::Key6))
+        m_currentAddressMode = 6;
+
+    static int lastAddressMode = m_currentAddressMode;
+
+    if (lastAddressMode != m_currentAddressMode)
+    {
+        // Release old samplers
+        SAFE_RELEASE(m_samplerPoint);
+        SAFE_RELEASE(m_samplerLinear);
+        SAFE_RELEASE(m_samplerAniso);
+
+        // Recreate samplers with the new address mode
+        D3D11_SAMPLER_DESC sampDesc = {};
+        sampDesc.ComparisonFunc = D3D11_COMPARISON_ALWAYS;
+        sampDesc.MinLOD = 0;
+        sampDesc.MaxLOD = D3D11_FLOAT32_MAX;
+
+        // Set address mode
+        if (m_currentAddressMode == 4) {
+            sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
+            sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
+            sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
+        }
+        else if (m_currentAddressMode == 5) {
+            sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_MIRROR;
+            sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_MIRROR;
+            sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_MIRROR;
+        }
+        else if (m_currentAddressMode == 6) {
+            sampDesc.AddressU = D3D11_TEXTURE_ADDRESS_CLAMP;
+            sampDesc.AddressV = D3D11_TEXTURE_ADDRESS_CLAMP;
+            sampDesc.AddressW = D3D11_TEXTURE_ADDRESS_CLAMP;
+        }
+
+        // POINT
+        sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
+        m_dxdevice->CreateSamplerState(&sampDesc, &m_samplerPoint);
+
+        // LINEAR
+        sampDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+        m_dxdevice->CreateSamplerState(&sampDesc, &m_samplerLinear);
+
+        // ANISO
+        sampDesc.Filter = D3D11_FILTER_ANISOTROPIC;
+        sampDesc.MaxAnisotropy = 16;
+        m_dxdevice->CreateSamplerState(&sampDesc, &m_samplerAniso);
+
+        lastAddressMode = m_currentAddressMode;
+    }
     // Quad model-to-world transformation
     m_quad_transform = mat4f::translation(0, 0, 0) *
         mat4f::rotation(-m_angle, 0.0f, 1.0f, 0.0f) *
@@ -186,11 +258,11 @@ void OurTestScene::Render()
 
     // Select sampler based on m_currentSampler
     ID3D11SamplerState* sampler = nullptr;
-    if (m_currentSampler == 1)
+    if (m_currentFilter == 1)
         sampler = m_samplerPoint;
-    else if (m_currentSampler == 2)
+    else if (m_currentFilter == 2)
         sampler = m_samplerLinear;
-    else if (m_currentSampler == 3)
+    else if (m_currentFilter == 3)
         sampler = m_samplerAniso;
 
     // Bind sampler

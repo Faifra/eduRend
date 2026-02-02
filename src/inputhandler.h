@@ -28,6 +28,9 @@ enum class Keys
 	Key1 = DIK_1,
 	Key2 = DIK_2,
 	Key3 = DIK_3,
+	Key4 = DIK_4,
+	Key5 = DIK_5,
+	Key6 = DIK_6,
 };
 
 /**
