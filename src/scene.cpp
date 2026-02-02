@@ -256,7 +256,7 @@ void OurTestScene::Render()
     UpdateLightCameraBuffer(light_pos, cam_pos);
     m_dxdevice_context->PSSetConstantBuffers(0, 1, &m_light_buffer);
 
-    // Select sampler based on m_currentSampler
+    // Select sampler based on m_currentFilter
     ID3D11SamplerState* sampler = nullptr;
     if (m_currentFilter == 1)
         sampler = m_samplerPoint;
