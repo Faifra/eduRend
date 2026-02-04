@@ -31,10 +31,6 @@ struct PSIn
     float3 BinormalWorld : BINORMAL1;
 };
 
-//-----------------------------------------------------------------------------------------
-// Pixel Shader
-//-----------------------------------------------------------------------------------------
-
 float4 PS_main(PSIn input) : SV_Target
 {
     // Debug shading #1
@@ -43,17 +39,28 @@ float4 PS_main(PSIn input) : SV_Target
     // Debug shading #2
     // return float4(input.TexCoord, 0, 1);
 
-    float3 N = normalize(input.NormalWorld);
+    // 1) Sample new normal and map from color to vector form
+    float3 normalSample = texNormal.Sample(texSamplerNormal, input.TexCoord).rgb;
+    normalSample = normalSample * 2.0f - 1.0f;
+
+    // 2) Construct TBN and transform new normal to world space
+    float3 Nworld = normalize(input.NormalWorld);
+    float3 T = normalize(input.TangentWorld - Nworld * dot(input.TangentWorld, Nworld));
+    float3 B = normalize(cross(Nworld, T));
+
+    float3x3 TBN = float3x3(T, B, Nworld);
+    float3 N = normalize(mul(TBN, normalSample));
+
+    // 3) Phong lighting using the new normal
+    float3 texColor = texDiffuse.Sample(texSampler, input.TexCoord).rgb;
+
     float3 L = normalize(light_pos.xyz - input.PosWorld);
     float3 V = normalize(camera_pos.xyz - input.PosWorld);
     float3 R = reflect(-L, N);
 
-    float3 texColor = texDiffuse.Sample(texSampler, input.TexCoord).rgb;
-    float3 normalSample = texNormal.Sample(texSamplerNormal, input.TexCoord).rgb;
-
     float3 ambient = AmbientColor.rgb * texColor;
     float3 diffuse = texColor * saturate(dot(N, L));
     float3 specular = SpecularColor.rgb * pow(saturate(dot(R, V)), Shininess.x);
-    
+
     return float4(ambient + diffuse + specular, 1);
 }
