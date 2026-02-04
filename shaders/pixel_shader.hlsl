@@ -1,6 +1,22 @@
 Texture2D texDiffuse : register(t0);
-Texture2D texNormal : register(t1);
 SamplerState texSampler : register(s0);
+
+Texture2D texNormal : register(t1);
+SamplerState texSamplerNormal : register(s1);
+
+cbuffer LightBuffer : register(b0)
+{
+    float4 light_pos;
+    float4 camera_pos;
+};
+
+cbuffer MaterialBuffer : register(b1)
+{
+    float4 AmbientColor;
+    float4 DiffuseColor;
+    float4 SpecularColor;
+    float4 Shininess = 0.1;
+};
 
 struct PSIn
 {
@@ -10,31 +26,34 @@ struct PSIn
 
     float3 PosWorld : POSITION1;
     float3 NormalWorld : NORMAL1;
+
     float3 TangentWorld : TANGENT1;
     float3 BinormalWorld : BINORMAL1;
 };
 
+//-----------------------------------------------------------------------------------------
+// Pixel Shader
+//-----------------------------------------------------------------------------------------
+
 float4 PS_main(PSIn input) : SV_Target
 {
-    float3 normalSample = texNormal.Sample(texSampler, input.TexCoord).xyz;
-    normalSample = normalSample * 2.0f - 1.0f;
+    // Debug shading #1
+    // return float4(input.Normal * 0.5 + 0.5, 1);
 
-    float3 T = normalize(input.TangentWorld);
-    float3 B = normalize(input.BinormalWorld);
+    // Debug shading #2
+    // return float4(input.TexCoord, 0, 1);
+
     float3 N = normalize(input.NormalWorld);
-
-    float3x3 TBN = float3x3(T, B, N);
-    float3 Nmap = normalize(mul(normalSample, TBN));
-
     float3 L = normalize(light_pos.xyz - input.PosWorld);
     float3 V = normalize(camera_pos.xyz - input.PosWorld);
-    float3 R = reflect(-L, Nmap);
+    float3 R = reflect(-L, N);
 
     float3 texColor = texDiffuse.Sample(texSampler, input.TexCoord).rgb;
+    float3 normalSample = texNormal.Sample(texSamplerNormal, input.TexCoord).rgb;
 
     float3 ambient = AmbientColor.rgb * texColor;
-    float3 diffuse = texColor * saturate(dot(Nmap, L));
+    float3 diffuse = texColor * saturate(dot(N, L));
     float3 specular = SpecularColor.rgb * pow(saturate(dot(R, V)), Shininess.x);
-
+    
     return float4(ambient + diffuse + specular, 1);
 }
